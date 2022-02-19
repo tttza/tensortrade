@@ -1,6 +1,8 @@
 import logging
 from decimal import Decimal
 
+import numpy as np
+
 from tensortrade.core import Clock
 from tensortrade.oms.wallets import Wallet
 from tensortrade.oms.exchanges import ExchangeOptions
@@ -35,7 +37,7 @@ def execute_buy_order(order: 'Order',
     `Trade`
         The executed trade that was made.
     """
-    if order.type == TradeType.LIMIT and order.price < current_price:
+    if order.type == TradeType.LIMIT and order.price <= current_price:
         return None
 
     filled = order.remaining.contain(order.exchange_pair)
@@ -43,11 +45,16 @@ def execute_buy_order(order: 'Order',
     if order.type == TradeType.MARKET:
         scale = order.price / max(current_price, order.price)
         filled = scale * filled
-
-    commission = options.commission * filled
+    if type(options.commission) == dict:
+        if order.type == TradeType.MARKET:
+            commission = options.commission['taker'] * filled
+        else:
+            commission = options.commission['maker'] * filled
+    else:
+        commission = options.commission * filled
     quantity = filled - commission
 
-    if commission.size < Decimal(10) ** -quantity.instrument.precision:
+    if np.abs(commission.size) < Decimal(10) ** -quantity.instrument.precision:
         logging.warning("Commission is less than instrument precision. Canceling order. "
                         "Consider defining a custom instrument with a higher precision.")
         order.cancel("COMMISSION IS LESS THAN PRECISION.")

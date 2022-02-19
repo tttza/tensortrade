@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import Callable
+from typing import Callable, Union
 from decimal import Decimal
 
 from tensortrade.core import Component, TimedIdentifiable
@@ -40,7 +40,7 @@ class ExchangeOptions:
     """
 
     def __init__(self,
-                 commission: float = 0.003,
+                 commission: Union[float, dict] = 0.003,
                  min_trade_size: float = 1e-6,
                  max_trade_size: float = 1e6,
                  min_trade_price: float = 1e-8,
