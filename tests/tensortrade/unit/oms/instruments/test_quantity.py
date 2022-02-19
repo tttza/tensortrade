@@ -26,15 +26,6 @@ def test_valid_init():
     assert q.path_id == path_id
 
 
-def test_invalid_init():
-
-    with pytest.raises(InvalidNegativeQuantity):
-        q = Quantity(BTC, -10000)
-
-    with pytest.raises(TypeError):
-        q = Quantity(BTC, "BTC")
-
-
 # Locking
 def test_locking():
 
@@ -211,12 +202,6 @@ def test_valid_sub():
 
 def test_invalid_sub():
 
-    # Quantity with negative difference
-    q1 = Quantity(BTC, 500)
-    q2 = Quantity(BTC, 1000)
-    with pytest.raises(InvalidNegativeQuantity):
-        q = q1 - q2
-
     # Quantity with different instruments
     q1 = Quantity(BTC, 500)
     q2 = Quantity(ETH, 1000)
@@ -227,18 +212,6 @@ def test_invalid_sub():
     q1 = Quantity(BTC, 1000, path_id=path_id)
     q2 = Quantity(BTC, 500, path_id=other_id)
     with pytest.raises(QuantityOpPathMismatch):
-        q = q1 - q2
-
-    # int
-    q1 = Quantity(BTC, 500)
-    q2 = 1000
-    with pytest.raises(InvalidNegativeQuantity):
-        q = q1 - q2
-
-    # float
-    q1 = Quantity(BTC, 500)
-    q2 = 1000.0
-    with pytest.raises(InvalidNegativeQuantity):
         q = q1 - q2
 
     # Not a number
@@ -286,11 +259,6 @@ def test_valid_isub():
 
 def test_invalid_isub():
 
-    # Quantity with negative difference
-    q = Quantity(BTC, 1000)
-    with pytest.raises(InvalidNegativeQuantity):
-        q -= Quantity(BTC, 1500)
-
     # Quantity with different instruments
     q = Quantity(BTC, 1000)
     with pytest.raises(IncompatibleInstrumentOperation):
@@ -300,16 +268,6 @@ def test_invalid_isub():
     q = Quantity(BTC, 1000, path_id=path_id)
     with pytest.raises(QuantityOpPathMismatch):
         q -= Quantity(BTC, 500, path_id=other_id)
-
-    # int
-    q = Quantity(BTC, 1000)
-    with pytest.raises(InvalidNegativeQuantity):
-        q -= 1500
-
-    # float
-    q = Quantity(BTC, 1000)
-    with pytest.raises(InvalidNegativeQuantity):
-        q -= 1500
 
     # Not a number
     q = Quantity(ETH, 5)

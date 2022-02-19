@@ -221,3 +221,17 @@ def test_transfer():
                     exchange_pair,
                     "transfer")
 
+    source = Wallet(exchange, 3.79283997 * BTC)
+    source.lock(3.00000029 * BTC, order, "test")
+
+    target = Wallet(exchange, 18903.89 * USD)
+
+    quantity = (2.19935873 * BTC).lock_for("fake_id")
+    commission = (-0.00659732 * BTC).lock_for("fake_id")
+
+    Wallet.transfer(source,
+                    target,
+                    quantity,
+                    commission,
+                    exchange_pair,
+                    "transfer")
