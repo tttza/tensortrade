@@ -220,7 +220,8 @@ class SimpleOrders(TensorTradeActionScheme):
         durations = self.default('durations', durations)
         self.durations = durations if isinstance(durations, list) else [durations]
 
-        self._trade_type = self.default('trade_type', trade_type)
+        trade_type = self.default('trade_type', trade_type)
+        self.trade_type = trade_type if isinstance(trade_type, list) else [trade_type]
         self._order_listener = self.default('order_listener', order_listener)
 
         self._action_space = None
@@ -233,7 +234,8 @@ class SimpleOrders(TensorTradeActionScheme):
                 self.criteria,
                 self.trade_sizes,
                 self.durations,
-                [TradeSide.BUY, TradeSide.SELL]
+                [TradeSide.BUY, TradeSide.SELL],
+                self.trade_type,
             )
             self.actions = list(self.actions)
             self.actions = list(product(self.portfolio.exchange_pairs, self.actions))
@@ -249,7 +251,7 @@ class SimpleOrders(TensorTradeActionScheme):
         if action == 0:
             return []
 
-        (ep, (criteria, proportion, duration, side)) = self.actions[action]
+        (ep, (criteria, proportion, duration, side, trade_type)) = self.actions[action]
 
         instrument = side.instrument(ep.pair)
         wallet = portfolio.get_wallet(ep.exchange.id, instrument=instrument)
@@ -268,7 +270,7 @@ class SimpleOrders(TensorTradeActionScheme):
         order = Order(
             step=self.clock.step,
             side=side,
-            trade_type=self._trade_type,
+            trade_type=trade_type,
             exchange_pair=ep,
             price=ep.price,
             quantity=quantity,
