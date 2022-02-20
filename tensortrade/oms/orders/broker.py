@@ -83,12 +83,12 @@ class Broker(OrderListener, TimeIndexed):
         executed_ids = []
         for order in self.unexecuted:
             if order.is_executable:
-                executed_ids.append(order.id)
                 self.executed[order.id] = order
-
                 order.attach(self)
                 order.execute()
-        
+                if len(order.trades) > 0:
+                    executed_ids.append(order.id)
+
         for order_id in executed_ids:
             self.unexecuted.remove(self.executed[order_id])
 

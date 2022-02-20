@@ -262,9 +262,10 @@ class SimpleOrders(TensorTradeActionScheme):
 
         quantity = (size * instrument).quantize()
 
+        base_size = size if side.value == 'buy' else size * float(wallet.exchange.quote_price(ep.pair))
         if size < 10 ** -instrument.precision \
-                or size < self.min_order_pct * portfolio.net_worth \
-                or size < self.min_order_abs:
+                or base_size < self.min_order_pct * portfolio.net_worth \
+                or base_size < self.min_order_abs:
             return []
 
         order = Order(

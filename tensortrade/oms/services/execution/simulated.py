@@ -76,7 +76,7 @@ def execute_buy_order(order: 'Order',
         side=TradeSide.BUY,
         trade_type=order.type,
         quantity=transfer.quantity,
-        price=transfer.price,
+        price=transfer.price if order.type == TradeType.MARKET else order.price,
         commission=transfer.commission
     )
 
@@ -111,15 +111,21 @@ def execute_sell_order(order: 'Order',
     `Trade`
         The executed trade that was made.
     """
-    if order.type == TradeType.LIMIT and order.price > current_price:
+    if order.type == TradeType.LIMIT and order.price >= current_price:
         return None
 
     filled = order.remaining.contain(order.exchange_pair)
 
-    commission = options.commission * filled
+    if type(options.commission) == dict:
+        if order.type == TradeType.MARKET:
+            commission = options.commission['taker'] * filled
+        else:
+            commission = options.commission['maker'] * filled
+    else:
+        commission = options.commission * filled
     quantity = filled - commission
 
-    if commission.size < Decimal(10) ** -quantity.instrument.precision:
+    if np.abs(commission.size) < Decimal(10) ** -quantity.instrument.precision:
         logging.warning("Commission is less than instrument precision. Canceling order. "
                         "Consider defining a custom instrument with a higher precision.")
         order.cancel("COMMISSION IS LESS THAN PRECISION.")
@@ -142,7 +148,7 @@ def execute_sell_order(order: 'Order',
         side=TradeSide.SELL,
         trade_type=order.type,
         quantity=transfer.quantity,
-        price=transfer.price,
+        price=transfer.price if order.type == TradeType.MARKET else order.price,
         commission=transfer.commission
     )
 
