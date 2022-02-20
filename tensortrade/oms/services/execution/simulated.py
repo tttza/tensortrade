@@ -138,7 +138,9 @@ def execute_sell_order(order: 'Order',
         quantity=quantity,
         commission=commission,
         exchange_pair=order.exchange_pair,
-        reason="SELL"
+        price=None if order.type == TradeType.MARKET else order.price,
+        reason="SELL",
+
     )
 
     trade = Trade(

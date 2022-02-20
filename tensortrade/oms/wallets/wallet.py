@@ -280,7 +280,9 @@ class Wallet(Identifiable):
                  quantity: 'Quantity',
                  commission: 'Quantity',
                  exchange_pair: 'ExchangePair',
-                 reason: str) -> 'Transfer':
+                 reason: str,
+                 price: float = None,
+                ) -> 'Transfer':
         """Transfers funds from one wallet to another.
 
         Parameters
@@ -323,18 +325,23 @@ class Wallet(Identifiable):
         commission = source.withdraw(commission, "COMMISSION")
         quantity = source.withdraw(quantity, "FILL ORDER")
 
+        if price is None:
+            _price = exchange_pair.price
+        else:
+            _price = Decimal(price)
+
         if quantity.instrument == exchange_pair.pair.base:
             instrument = exchange_pair.pair.quote
-            converted_size = quantity.size / exchange_pair.price
+            converted_size = quantity.size / _price
         else:
             instrument = exchange_pair.pair.base
-            converted_size = quantity.size * exchange_pair.price
+            converted_size = quantity.size * _price
 
         converted = Quantity(instrument, converted_size, quantity.path_id).quantize()
 
         converted = target.deposit(converted, 'TRADED {} {} @ {}'.format(quantity,
                                                                          exchange_pair,
-                                                                         exchange_pair.price))
+                                                                         _price))
 
         lsb2 = source.locked.get(poid).size
         ltb2 = target.locked.get(poid, 0 * pair.quote).size
@@ -342,7 +349,7 @@ class Wallet(Identifiable):
         q = quantity.size
         c = commission.size
         cv = converted.size
-        p = exchange_pair.inverse_price if pair == exchange_pair.pair else exchange_pair.price
+        p = 1/_price if pair == exchange_pair.pair else _price
 
         source_quantization = Decimal(10) ** -source.instrument.precision
         target_quantization = Decimal(10) ** -target.instrument.precision
