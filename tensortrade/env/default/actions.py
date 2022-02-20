@@ -1,5 +1,6 @@
 import logging
 from abc import abstractmethod
+from decimal import Decimal
 from itertools import product
 from typing import Union, List, Any
 
@@ -204,7 +205,9 @@ class SimpleOrders(TensorTradeActionScheme):
                  trade_type: 'TradeType' = TradeType.MARKET,
                  order_listener: 'OrderListener' = None,
                  min_order_pct: float = 0.02,
-                 min_order_abs: float = 0.00) -> None:
+                 min_order_abs: float = 0.00,
+                 limit_pct: 'Union[List[float], float]' = 0,
+                 ) -> None:
         super().__init__()
         self.min_order_pct = min_order_pct
         self.min_order_abs = min_order_abs
@@ -224,18 +227,31 @@ class SimpleOrders(TensorTradeActionScheme):
         self.trade_type = trade_type if isinstance(trade_type, list) else [trade_type]
         self._order_listener = self.default('order_listener', order_listener)
 
+        limit_pct = self.default('limit_pct', limit_pct)
+        self.limit_pct = limit_pct if isinstance(limit_pct, list) else [limit_pct]
+
         self._action_space = None
         self.actions = None
 
     @property
     def action_space(self) -> Space:
         if not self._action_space:
+            if TradeType.LIMIT in self.trade_type:
+                trade_type = list(product([TradeType.LIMIT], self.limit_pct))
+                for t in self.trade_type:
+                    if t == TradeType.LIMIT: continue
+                    trade_type += [[t, None]]
+            else:
+                trade_type = []
+                for t in self.trade_type:
+                    trade_type += [[t, None]]
+            trade_type
             self.actions = product(
                 self.criteria,
                 self.trade_sizes,
                 self.durations,
                 [TradeSide.BUY, TradeSide.SELL],
-                self.trade_type,
+                trade_type,
             )
             self.actions = list(self.actions)
             self.actions = list(product(self.portfolio.exchange_pairs, self.actions))
@@ -268,12 +284,19 @@ class SimpleOrders(TensorTradeActionScheme):
                 or base_size < self.min_order_abs:
             return []
 
+        price = ep.price
+        if trade_type[0] == TradeType.LIMIT:
+            if side.value == 'buy':
+                price -= price * Decimal(trade_type[1])
+            else:
+                price += price * Decimal(trade_type[1])
+
         order = Order(
             step=self.clock.step,
             side=side,
-            trade_type=trade_type,
+            trade_type=trade_type[0],
             exchange_pair=ep,
-            price=ep.price,
+            price=price,
             quantity=quantity,
             criteria=criteria,
             end=self.clock.step + duration if duration else None,
